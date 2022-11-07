@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
@@ -252,8 +252,8 @@ namespace Coffee.UIEffects
                             Vector3 cornerUv1 = s_TempVerts[i + j + 1].uv0;
                             Vector3 cornerUv2 = s_TempVerts[i + j + 4].uv0;
 
-                            Vector3 centerPos = (cornerPos1 + cornerPos2) / 2;
-                            Vector3 centerUV = (cornerUv1 + cornerUv2) / 2;
+                            Vector3 centerPos = (cornerPos1 + cornerPos2) * 0.5f;
+                            Vector3 centerUV = (cornerUv1 + cornerUv2) * 0.5f;
                             size = (cornerPos1 - cornerPos2);
 
                             size.x = 1 + expand / Mathf.Abs(size.x);
@@ -284,7 +284,7 @@ namespace Coffee.UIEffects
                                 uv0.y = uv0.y * size.y + tUV.y;
                             }
 
-                            vt.uv0 = new Vector2(Packer.ToFloat((uv0.x + 0.5f) / 2f, (uv0.y + 0.5f) / 2f),
+                            vt.uv0 = new Vector2(Packer.ToFloat((uv0.x + 0.5f) * 0.5f, (uv0.y + 0.5f) * 0.5f),
                                 normalizedIndex);
                             vt.position = pos;
 
@@ -307,7 +307,7 @@ namespace Coffee.UIEffects
                     vh.PopulateUIVertex(ref vt, i);
                     Vector2 uv0 = vt.uv0;
                     vt.uv0 = new Vector2(
-                        Packer.ToFloat((uv0.x + 0.5f) / 2f, (uv0.y + 0.5f) / 2f),
+                        Packer.ToFloat((uv0.x + 0.5f) * 0.5f, (uv0.y + 0.5f) * 0.5f),
                         normalizedIndex
                     );
                     vh.SetUIVertex(vt, i);
@@ -329,7 +329,8 @@ namespace Coffee.UIEffects
             Vector2 maxPos = new Vector2(float.MinValue, float.MinValue);
             Vector2 minUV = new Vector2(float.MaxValue, float.MaxValue);
             Vector2 maxUV = new Vector2(float.MinValue, float.MinValue);
-            for (int i = start; i < start + count; i++)
+            var count2 = start + count;
+            for (int i = start; i < count2; i++)
             {
                 UIVertex vt = verts[i];
 
