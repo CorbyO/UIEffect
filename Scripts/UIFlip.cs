@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
@@ -54,7 +54,8 @@ namespace Coffee.UIEffects
             if (!isActiveAndEnabled) return;
 
             var vt = default(UIVertex);
-            for (var i = 0; i < vh.currentVertCount; i++)
+            var count = vh.currentVertCount;
+            for (var i = 0; i < count; i++)
             {
                 vh.PopulateUIVertex(ref vt, i);
                 var pos = vt.position;
