@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using UnityEngine.UI;
 
 namespace Coffee.UIEffects
@@ -277,7 +277,8 @@ namespace Coffee.UIEffects
 
             // Calculate vertex color.
             var localMatrix = new Matrix2x3(rect, dir.x, dir.y); // Get local matrix.
-            for (var i = 0; i < vh.currentVertCount; i++)
+            var count = vh.currentVertCount;
+            for (var i = 0; i < count; i++)
             {
                 vh.PopulateUIVertex(ref vertex, i);
 
