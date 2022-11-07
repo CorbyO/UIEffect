@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -212,7 +212,7 @@ namespace Coffee.UIEffects
             // Append shadow vertices.
             //================================
             {
-                _uiEffect = _uiEffect ? _uiEffect : GetComponent<UIEffect>();
+                _uiEffect ??= GetComponent<UIEffect>();
                 var start = s_Verts.Count - _graphicVertexCount;
                 var end = s_Verts.Count;
 
@@ -305,6 +305,7 @@ namespace Coffee.UIEffects
 
             // Append shadow vertices to the front of list.
             // * The original vertex is pushed backward.
+            var ratio = 1f / 255f;
             for (var i = 0; i < count; ++i)
             {
                 vt = verts[i + start + count];
@@ -313,7 +314,7 @@ namespace Coffee.UIEffects
                 vt.position.Set(v.x + x, v.y + y, v.z);
 
                 var vertColor = effectColor;
-                vertColor.a = alpha ? color.a * vt.color.a / 255 : color.a;
+                vertColor.a = alpha ? color.a * vt.color.a * ratio : color.a;
                 vt.color = vertColor;
 
 
