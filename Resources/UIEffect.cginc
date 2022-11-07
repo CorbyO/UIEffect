@@ -21,19 +21,20 @@ sampler2D _ParamTex;
 fixed4 UnpackToVec4(float value)
 {
 	const int PACKER_STEP = 64;
-	const int PRECISION = PACKER_STEP - 1;
+	const float PACKER_STEP_INV = 1.0 / PACKER_STEP;
+	const float PRECISION_INV = 1.0 / PACKER_STEP - 1;
 	fixed4 unpacked;
 
-	unpacked.x = (value % PACKER_STEP) / PRECISION;
-	value = floor(value / PACKER_STEP);
+	unpacked.x = (value % PACKER_STEP) * PRECISION_INV;
+	value = floor(value * PACKER_STEP_INV);
 
-	unpacked.y = (value % PACKER_STEP) / PRECISION;
-	value = floor(value / PACKER_STEP);
+	unpacked.y = (value % PACKER_STEP) * PRECISION_INV;
+	value = floor(value * PACKER_STEP_INV);
 
-	unpacked.z = (value % PACKER_STEP) / PRECISION;
-	value = floor(value / PACKER_STEP);
+	unpacked.z = (value % PACKER_STEP) * PRECISION_INV;
+	value = floor(value * PACKER_STEP_INV);
 
-	unpacked.w = (value % PACKER_STEP) / PRECISION;
+	unpacked.w = (value % PACKER_STEP) * PRECISION_INV;
 	return unpacked;
 }
 
@@ -41,16 +42,17 @@ fixed4 UnpackToVec4(float value)
 fixed3 UnpackToVec3(float value)
 {
 	const int PACKER_STEP = 256;
-	const int PRECISION = PACKER_STEP - 1;
+	const fixed PACKER_STEP_RATIO = 1.0 / PACKER_STEP;
+	const fixed PRECISION_RATIO = 1.0 / 255;
 	fixed3 unpacked;
 
-	unpacked.x = (value % (PACKER_STEP)) / (PACKER_STEP - 1);
-	value = floor(value / (PACKER_STEP));
+	unpacked.x = (value % PACKER_STEP) * PRECISION_RATIO;
+	value = floor(value * PACKER_STEP_RATIO);
 
-	unpacked.y = (value % PACKER_STEP) / (PACKER_STEP - 1);
-	value = floor(value / PACKER_STEP);
+	unpacked.y = (value % PACKER_STEP) * PRECISION_RATIO;
+	value = floor(value * PACKER_STEP_RATIO);
 
-	unpacked.z = (value % PACKER_STEP) / (PACKER_STEP - 1);
+	unpacked.z = (value % PACKER_STEP) * PRECISION_RATIO;
 	return unpacked;
 }
 
@@ -58,13 +60,14 @@ fixed3 UnpackToVec3(float value)
 half2 UnpackToVec2(float value)
 {
 	const int PACKER_STEP = 4096;
-	const int PRECISION = PACKER_STEP - 1;
+	const fixed PACKER_STEP_RATIO = 1.0 / PACKER_STEP;
+	const fixed PRECISION_RATIO = 1.0 / 4095;
 	half2 unpacked;
 
-	unpacked.x = (value % (PACKER_STEP)) / (PACKER_STEP - 1);
-	value = floor(value / (PACKER_STEP));
+	unpacked.x = (value % PACKER_STEP) * PRECISION_RATIO;
+	value = floor(value * PACKER_STEP_RATIO);
 
-	unpacked.y = (value % PACKER_STEP) / (PACKER_STEP - 1);
+	unpacked.y = (value % PACKER_STEP) * PRECISION_RATIO;
 	return unpacked;
 }
 
@@ -99,12 +102,13 @@ fixed4 Tex2DBlurring (sampler2D tex, half2 texcood, half2 blur, half4 mask)
 	float4 o = 0;
 	float sum = 0;
 	float2 shift = 0;
+	int sizeTemp = KERNEL_SIZE * 0.5;
 	for(int x = 0; x < KERNEL_SIZE; x++)
 	{
-		shift.x = blur.x * (float(x) - KERNEL_SIZE/2);
+		shift.x = blur.x * (float(x) - sizeTemp);
 		for(int y = 0; y < KERNEL_SIZE; y++)
 		{
-			shift.y = blur.y * (float(y) - KERNEL_SIZE/2);
+			shift.y = blur.y * (float(y) - sizeTemp);
 			float2 uv = texcood + shift;
 			float weight = KERNEL_[x] * KERNEL_[y];
 			sum += weight;
@@ -148,12 +152,13 @@ fixed4 Tex2DBlurring1D (sampler2D tex, half2 uv, half2 blur)
 	float sum = 0;
 	float weight;
 	half2 texcood;
-	for(int i = -KERNEL_SIZE/2; i <= KERNEL_SIZE/2; i++)
+	int sizeTemp = KERNEL_SIZE * 0.5;
+	for(int i = -sizeTemp; i <= sizeTemp; i++)
 	{
 		texcood = uv;
 		texcood.x += blur.x * i;
 		texcood.y += blur.y * i;
-		weight = 1.0/(abs(i)+2);
+		weight = 1.0 / (abs(i)+2);
 		o += tex2D(tex, texcood)*weight;
 		sum += weight;
 	}
@@ -234,13 +239,14 @@ fixed4 ApplyTransitionEffect(half4 color, half3 transParam)
 	#elif CUTOFF
 	color.a *= step(0.001, color.a * alpha - effectFactor);
 	#elif DISSOLVE
-    fixed width = param.y/4;
+    fixed width = param.y * 0.25;
     fixed softness = param.z;
+	const fixed SOFTNESS_RATIO = 1 / softness;
 	fixed3 dissolveColor = tex2D(_ParamTex, float2(0.75, transParam.z)).rgb;
 	float factor = alpha - effectFactor * ( 1 + width ) + width;
-	fixed edgeLerp = step(factor, color.a) * saturate((width - factor)*16/ softness);
+	fixed edgeLerp = step(factor, color.a) * saturate((width - factor) * 16 * SOFTNESS_RATIO);
 	color = ApplyColorEffect(color, fixed4(dissolveColor, edgeLerp));
-	color.a *= saturate((factor)*32/ softness);
+	color.a *= saturate(factor * 32 * SOFTNESS_RATIO);
 	#endif
 
 	return color;
@@ -262,14 +268,16 @@ half4 ApplyShinyEffect(half4 color, half2 shinyParam)
 	half shinePower = smoothstep(0, soft, normalized);
 	half3 reflectColor = lerp(fixed3(1,1,1), color.rgb * 7, gloss);
 
-	color.rgb += color.a * (shinePower / 2) * brightness * reflectColor;
+	color.rgb += color.a * (shinePower) * brightness * reflectColor;
 
 
 	return color;
 }
 
+const half HALF_THREE_RATIO = 1 / 3.0;
+
 half3 RgbToHsv(half3 c) {
-	half4 K = half4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
+	half4 K = half4(0.0, -1.0 * HALF_THREE_RATIO, 2.0 * HALF_THREE_RATIO, -1.0);
 	half4 p = lerp(half4(c.bg, K.wz), half4(c.gb, K.xy), step(c.b, c.g));
 	half4 q = lerp(half4(p.xyw, c.r), half4(c.r, p.yzx), step(p.x, c.r));
 
@@ -280,7 +288,7 @@ half3 RgbToHsv(half3 c) {
 
 half3 HsvToRgb(half3 c) {
 	c = half3(c.x, clamp(c.yz, 0.0, 1.0));
-	half4 K = half4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
+	half4 K = half4(1.0, 2.0 * HALF_THREE_RATIO, 1.0 * HALF_THREE_RATIO, 3.0);
 	half3 p = abs(frac(c.xxx + K.xyz) * 6.0 - K.www);
 	return c.z * lerp(K.xxx, clamp(p.xyz - K.xxx, 0.0, 1.0), c.y);
 }
